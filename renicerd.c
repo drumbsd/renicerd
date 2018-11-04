@@ -62,7 +62,7 @@ void	exitprocess( int signo );
 
 kvm_t *mykernel;
 
-unsigned int    cnt;
+int    cnt;
 
 struct record {
         char processname[21];
@@ -110,7 +110,7 @@ err_set_exit(exitprocess);
                 switch (ch) {
                 case 'f':
                         fflag=1;
-                        if ( asprintf(&configfile,optarg) != -1 ) {
+                        if ( asprintf(&configfile,"%s",optarg) != -1 ) {
                                 if ( (access(configfile,R_OK)) == -1 ) {
                                         fprintf(stderr,"%s: %s\n",configfile,strerror(errno));
                                         exit(1);
