@@ -28,6 +28,7 @@ WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
 OF SUCH DAMAGE.
 */
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <kvm.h>
@@ -41,6 +42,7 @@ OF SUCH DAMAGE.
 #include <sys/syslog.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include <errno.h>
 
 #define		SLEEP		30
 #define		_PATH_LOGPID	"/var/run/renicerd.pid"
@@ -91,7 +93,8 @@ time_t	oldtime;
 /* - Variables - */
 FILE *fp;
 const char errstr[_POSIX2_LINE_MAX];
-int mib[2],siz,reniced=0,i,fscale,percentuale;
+int mib[2],reniced=0,i,fscale,percentuale;
+size_t siz;
 
 /* - Check if PID file is present - */
 
@@ -167,7 +170,7 @@ puntatore2=puntatore;
 
 	/* - Get list of process with kvm_getprocs - */
 	
-	if((myproc=(struct kinfo_proc *) kvm_getprocs(mykernel,KERN_PROC_ALL,0,cnt)) == NULL)
+	if((myproc=(struct kinfo_proc *) kvm_getprocs(mykernel,KERN_PROC_ALL,0,sizeof(struct kinfo_proc), cnt)) == NULL)
 		err(1,"unable to get procs (kvm_getprocs)");
 
 	/* - Check if configfile is changed from the last check. Then reload it - */
@@ -205,14 +208,14 @@ puntatore2=puntatore;
 		while ( puntatore != NULL ) {
 	  
 			/* - Check if process name of each element is the same of process - */
-			if(strcmp(puntatore->processname,myproc[i].kp_proc.p_comm) == 0) {
+			if(strcmp(puntatore->processname,myproc[i].p_comm) == 0) {
 
-			    percentuale=100.0 * fxtofl(myproc[i].kp_proc.p_pctcpu);
+			    percentuale=100.0 * fxtofl(myproc[i].p_pctcpu);
 
-			      if((percentuale > puntatore->cpu) && (myproc[i].kp_proc.p_nice+NICEOPENBSDCALC != puntatore->nice)) {
+			      if((percentuale > puntatore->cpu) && (myproc[i].p_nice+NICEOPENBSDCALC != puntatore->nice)) {
 				
-				setpriority(PRIO_PROCESS, (int) myproc[i].kp_proc.p_pid , puntatore->nice);
-        	                syslog(LOG_CONS,"Process named %s(PID: %d) reniced!",myproc[i].kp_proc.p_comm,myproc[i].kp_proc.p_pid);
+				setpriority(PRIO_PROCESS, (int) myproc[i].p_pid , puntatore->nice);
+        	                syslog(LOG_CONS,"Process named %s(PID: %d) reniced!",myproc[i].p_comm,myproc[i].p_pid);
 				reniced=1;
 		              }		
 		        }
